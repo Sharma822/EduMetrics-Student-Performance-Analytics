@@ -1,0 +1,11 @@
+id,roll_no,name,gender,math_score,science_score,english_score,attendance
+1,101,Aarav Sharma,Male,85,90,78,92
+2,102,Priya Patel,Female,92,95,89,96
+3,103,Rohan Verma,Male,45,52,40,75
+4,104,Sneha Gupta,Female,78,82,85,88
+5,105,Amit Kumar,Male,32,28,35,62
+6,106,Neha Singh,Female,88,84,91,94
+7,107,Vikram Malhotra,Male,95,92,96,98
+8,108,Anjali Rao,Female,64,70,68,82
+9,109,Rahul Yadav,Male,55,60,58,80
+10,110,Kavita Nair,Female,38,42,39,70

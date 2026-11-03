@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Performance Analytics Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div>
+                <h1>📊 Student Performance Dashboard</h1>
+                <p style="color: var(--text-muted); font-size: 14px;">Powered by Python Flask, Pandas, NumPy & Matplotlib</p>
+            </div>
+            <button class="theme-toggle-btn" onclick="toggleTheme()">🌓 Dark / Light Mode</button>
+        </header>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- KPI / Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h4>Total Students</h4>
+                <div class="value">{{ stats.total_students }}</div>
+            </div>
+            <div class="stat-card">
+                <h4>Overall Average</h4>
+                <div class="value">{{ stats.avg_overall }}%</div>
+            </div>
+            <div class="stat-card">
+                <h4>Avg Attendance</h4>
+                <div class="value">{{ stats.avg_attendance }}%</div>
+            </div>
+            <div class="stat-card">
+                <h4>Pass / Fail</h4>
+                <div class="value" style="font-size: 20px;">
+                    <span style="color: var(--success);">{{ stats.pass_count }} Pass</span> / 
+                    <span style="color: var(--danger);">{{ stats.fail_count }} Fail</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <h4>Top Performer</h4>
+                <div class="value" style="font-size: 18px; color: var(--primary);">
+                    {% if stats.top_student %}
+                        {{ stats.top_student.name }} ({{ stats.top_student.average_score }}%)
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Matplotlib Charts Section -->
+        <h2 style="margin-bottom: 16px; font-size: 20px;">📈 Visual Analytics (Generated via Matplotlib)</h2>
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h3>Pass / Fail Ratio</h3>
+                {% if pass_fail_chart %}
+                    <img src="data:image/png;base64,{{ pass_fail_chart }}" alt="Pass Fail Ratio Chart">
+                {% else %}
+                    <p>No chart data available</p>
+                {% endif %}
+            </div>
+            <div class="chart-card">
+                <h3>Grade Breakdown</h3>
+                {% if grade_chart %}
+                    <img src="data:image/png;base64,{{ grade_chart }}" alt="Grade Distribution Chart">
+                {% else %}
+                    <p>No chart data available</p>
+                {% endif %}
+            </div>
+            <div class="chart-card">
+                <h3>Subject-wise Performance</h3>
+                {% if subject_chart %}
+                    <img src="data:image/png;base64,{{ subject_chart }}" alt="Average Subject Scores Chart">
+                {% else %}
+                    <p>No chart data available</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Add Student Form Card -->
+        <div class="form-card">
+            <h3>➕ Add New Student Record</h3>
+            <form action="{{ url_for('add_student') }}" method="POST">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Roll Number</label>
+                        <input type="text" name="roll_no" class="form-control" placeholder="e.g. 111" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Student Name</label>
+                        <input type="text" name="name" class="form-control" placeholder="Full Name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Gender</label>
+                        <select name="gender" class="form-control">
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Math Score</label>
+                        <input type="number" name="math_score" class="form-control" min="0" max="100" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Science Score</label>
+                        <input type="number" name="science_score" class="form-control" min="0" max="100" required>
+                    </div>
+                    <div class="form-group">
+                        <label>English Score</label>
+                        <input type="number" name="english_score" class="form-control" min="0" max="100" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Attendance (%)</label>
+                        <input type="number" name="attendance" class="form-control" min="0" max="100" required>
+                    </div>
+                </div>
+                <div style="margin-top: 16px;">
+                    <button type="submit" class="btn btn-primary">Save Student</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Search, Filter & Sort Controls -->
+        <div class="controls-card">
+            <form method="GET" action="{{ url_for('index') }}" class="filter-form">
+                <input type="text" name="search" placeholder="Search by name or roll..." value="{{ search }}">
+                
+                <select name="filter_status">
+                    <option value="All" {% if filter_status == 'All' %}selected{% endif %}>All Status</option>
+                    <option value="Pass" {% if filter_status == 'Pass' %}selected{% endif %}>Pass Only</option>
+                    <option value="Fail" {% if filter_status == 'Fail' %}selected{% endif %}>Fail Only</option>
+                </select>
+
+                <select name="sort_by">
+                    <option value="id" {% if sort_by == 'id' %}selected{% endif %}>Sort by: ID</option>
+                    <option value="roll_no" {% if sort_by == 'roll_no' %}selected{% endif %}>Sort by: Roll No</option>
+                    <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Sort by: Name</option>
+                    <option value="total_score_desc" {% if sort_by == 'total_score_desc' %}selected{% endif %}>Sort by: Highest Marks</option>
+                    <option value="attendance_desc" {% if sort_by == 'attendance_desc' %}selected{% endif %}>Sort by: Attendance</option>
+                </select>
+
+                <button type="submit" class="btn btn-primary">Apply</button>
+                <a href="{{ url_for('index') }}" class="btn btn-secondary">Reset</a>
+            </form>
+        </div>
+
+        <!-- Student Records Table -->
+        <div class="table-card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Roll No</th>
+                        <th>Name</th>
+                        <th>Gender</th>
+                        <th>Math</th>
+                        <th>Science</th>
+                        <th>English</th>
+                        <th>Total</th>
+                        <th>Average</th>
+                        <th>Grade</th>
+                        <th>Attendance</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in students %}
+                    <tr>
+                        <td><strong>{{ s.roll_no }}</strong></td>
+                        <td>{{ s.name }}</td>
+                        <td>{{ s.gender }}</td>
+                        <td>{{ s.math_score }}</td>
+                        <td>{{ s.science_score }}</td>
+                        <td>{{ s.english_score }}</td>
+                        <td><strong>{{ s.total_score }}</strong></td>
+                        <td>{{ s.average_score }}%</td>
+                        <td><strong>{{ s.grade }}</strong></td>
+                        <td>{{ s.attendance }}%</td>
+                        <td>
+                            <span class="badge {% if s.status == 'Pass' %}badge-pass{% else %}badge-fail{% endif %}">
+                                {{ s.status }}
+                            </span>
+                        </td>
+                        <td style="display: flex; gap: 6px;">
+                            <a href="{{ url_for('edit_student', id=s.id) }}" class="btn btn-warning">Edit</a>
+                            <form action="{{ url_for('delete_student', id=s.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this student?');">
+                                <button type="submit" class="btn btn-danger" style="padding: 5px 10px; font-size: 13px;">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="12" style="text-align: center; padding: 24px;">No student records found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Theme toggle logic (Saved in localStorage)
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        }
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+        }
+    </script>
+</body>
+</html>
